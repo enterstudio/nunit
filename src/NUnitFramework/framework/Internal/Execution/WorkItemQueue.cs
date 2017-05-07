@@ -64,7 +64,9 @@ namespace NUnit.Framework.Internal.Execution
 
         private Logger log = InternalTrace.GetLogger("WorkItemQueue");
 
-        private readonly ConcurrentQueue<WorkItem> _innerQueue = new ConcurrentQueue<WorkItem>();
+        private ConcurrentQueue<WorkItem> _innerQueue = new ConcurrentQueue<WorkItem>();
+
+        private Stack<ConcurrentQueue<WorkItem>> _savedQueues = new Stack<ConcurrentQueue<WorkItem>>();
 
         /* This event is used solely for the purpose of having an optimized sleep cycle when
          * we have to wait on an external event (Add or Remove for instance)
@@ -268,6 +270,28 @@ namespace NUnit.Framework.Internal.Execution
             log.Info("{0} pausing", Name);
 
             Interlocked.CompareExchange(ref _state, (int)WorkItemQueueState.Paused, (int)WorkItemQueueState.Running);
+        }
+
+        /// <summary>
+        /// Save the current inner queue and create new ones for use by
+        /// a non-parallel fixture with parallel children.
+        /// </summary>
+        public void Save()
+        {
+            Pause();
+            _savedQueues.Push(_innerQueue);
+            _innerQueue = new ConcurrentQueue<WorkItem>();
+            Start();
+        }
+
+        /// <summary>
+        /// Restore the inner queue that was previously saved
+        /// </summary>
+        public void Restore()
+        {
+            Pause();
+            _innerQueue = _savedQueues.Pop();
+            Start();
         }
 
         #endregion

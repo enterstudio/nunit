@@ -181,6 +181,36 @@ namespace NUnit.Framework.Internal.Execution
                 shift.Cancel(force);
         }
 
+        private object _queueLock = new object();
+
+        /// <summary>
+        /// Save the state of the queues
+        /// </summary>
+        public void SaveQueueState()
+        {
+            lock (_queueLock)
+            {
+                ParallelQueue.Save();
+                ParallelSTAQueue.Save();
+                NonParallelQueue.Save();
+                NonParallelSTAQueue.Save();
+            }
+        }
+
+        /// <summary>
+        /// Restore the saved state of the queues
+        /// </summary>
+        public void RestoreQueueState()
+        {
+            lock (_queueLock)
+            {
+                ParallelQueue.Restore();
+                ParallelSTAQueue.Restore();
+                NonParallelQueue.Restore();
+                NonParallelSTAQueue.Restore();
+            }
+        }
+
         #endregion
 
         #region Private Queue Properties
